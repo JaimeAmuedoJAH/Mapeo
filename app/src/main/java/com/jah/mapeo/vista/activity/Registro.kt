@@ -1,6 +1,6 @@
-// com.jah.mapeo.vista.activity.Registro.kt
 package com.jah.mapeo.vista.activity
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -22,9 +22,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.jah.mapeo.R
-import com.jah.mapeo.contralador.AppDatabase
-import com.jah.mapeo.modelo.Usuario
-import kotlinx.coroutines.launch
+import com.jah.mapeo.modelo.RegistroRequest
+import com.jah.mapeo.modelo.RegistroResponse
+import com.jah.mapeo.modelo.RetrofitClient
+import com.jah.mapeo.modelo.RetrofitClientPublic
+import okhttp3.ResponseBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class Registro : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,10 +42,6 @@ class Registro : AppCompatActivity() {
     @Composable
     fun RegistroScreen(onSuccess: () -> Unit) {
         val context = LocalContext.current
-        val scope = rememberCoroutineScope()
-        val db = remember { AppDatabase.getDatabase(context) }
-        val usuarioDao = db.usuarioDao()
-
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
         var confirmPassword by remember { mutableStateOf("") }
@@ -133,21 +134,33 @@ class Registro : AppCompatActivity() {
 
             Button(
                 onClick = {
-                    if (password != confirmPassword) {
-                        Toast.makeText(context, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
+                    val request = RegistroRequest(
+                        nombre = username,
+                        email = email,
+                        contrasena = password
+                    )
 
-                    scope.launch {
-                        val existente = usuarioDao.obtenerPorEmail(email)
-                        if (existente != null) {
-                            Toast.makeText(context, "El email ya está registrado", Toast.LENGTH_SHORT).show()
-                        } else {
-                            usuarioDao.insertar(Usuario(nombre = username, email = email, password = password))
-                            Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show()
-                            onSuccess()
+                    RetrofitClientPublic.instance.registrar(request).enqueue(object : Callback<ResponseBody> {
+                        override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                            if (response.isSuccessful) {
+
+                                Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show()
+
+                                // Redirige a login
+                                val intent = Intent(context, MainActivity::class.java)
+                                context.startActivity(intent)
+                                if (context is AppCompatActivity) context.finish()
+                            } else {
+                                Toast.makeText(context, "Error del servidor: ${response.code()}", Toast.LENGTH_SHORT).show()
+                            }
                         }
-                    }
+
+                        override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                            Toast.makeText(context, "Error de red: ${t.message}", Toast.LENGTH_SHORT).show()
+                        }
+                    })
+
+
                 },
                 colors = ButtonDefaults.buttonColors(colorResource(id = R.color.buttons)),
                 modifier = Modifier.fillMaxWidth(0.8f)

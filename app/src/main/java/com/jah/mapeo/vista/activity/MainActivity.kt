@@ -25,25 +25,38 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jah.mapeo.R
 import com.jah.mapeo.contralador.AppDatabase
+import com.jah.mapeo.modelo.LoginRequest
+import com.jah.mapeo.modelo.LoginResponse
+import com.jah.mapeo.modelo.RetrofitClient
+import com.jah.mapeo.modelo.RetrofitClientPublic
 import kotlinx.coroutines.launch
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ✅ Verifica si ya hay sesión guardada
-        val prefs = getSharedPreferences("sesion", MODE_PRIVATE)
-        val emailGuardado = prefs.getString("email", null)
-        if (emailGuardado != null) {
-            // Ya hay sesión activa, redirige a Dashboard
-            startActivity(Intent(this, Inicio::class.java)) // reemplaza con tu actividad real
+        // Inicializa Retrofit con el contexto de aplicación
+        RetrofitClient.init(this)
+
+        // Verifica si hay token guardado (sesión activa)
+        val prefs = getSharedPreferences("auth_prefs", MODE_PRIVATE)
+        val token = prefs.getString("jwt_token", null)
+
+        if (token != null) {
+            // Hay sesión activa, redirige al Inicio
+            startActivity(Intent(this, Inicio::class.java))
             finish()
         } else {
+            // No hay sesión activa, muestra la pantalla de login
             setContent {
                 LoginScreen()
             }
         }
     }
+
 
     @Composable
     fun LoginScreen() {
@@ -132,27 +145,37 @@ class MainActivity : AppCompatActivity() {
 
             Button(
                 onClick = {
-                    if (email.isBlank() || password.isBlank()) {
-                        Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
+                    val loginRequest = LoginRequest(email, password)
 
-                    scope.launch {
-                        val usuario = usuarioDao.obtenerPorEmail(email)
-                        if (usuario != null && usuario.password == password) {
-                            // ✅ Guardar sesión
-                            val prefs = context.getSharedPreferences("sesion", Context.MODE_PRIVATE)
-                            prefs.edit().putString("email", email).apply()
+                    RetrofitClientPublic.instance.login(loginRequest).enqueue(object : Callback<LoginResponse> {
+                        override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {if (response.isSuccessful) {
+                            val token = response.body()?.token
+                            if (token != null) {
+                                // Guardamos el token
+                                val prefs = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+                                prefs.edit().putString("jwt_token", token).apply()
 
-                            Toast.makeText(context, "Login correcto", Toast.LENGTH_SHORT).show()
-                            // Redirigir al Dashboard
-                            val intent = Intent(context, Inicio::class.java)
-                            context.startActivity(intent)
-                            (context as? AppCompatActivity)?.finish()
+                                // Redirigir al inicio
+                                context.startActivity(Intent(context, Inicio::class.java))
+                                if (context is AppCompatActivity) {
+                                    context.finish()
+                                }
+                            } else {
+                                Toast.makeText(context, "Token vacío. Intenta nuevamente.", Toast.LENGTH_SHORT).show()
+                            }
                         } else {
-                            Toast.makeText(context, "Credenciales incorrectas", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Credenciales inválidas", Toast.LENGTH_SHORT).show()
                         }
-                    }
+
+                        }
+
+                        override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                            Toast.makeText(context, "Error de conexión: ${t.message}", Toast.LENGTH_SHORT).show()
+                        }
+
+                    })
+
+
                 },
                 colors = ButtonDefaults.buttonColors(colorResource(id = R.color.buttons)),
                 modifier = Modifier.fillMaxWidth(0.8f)
