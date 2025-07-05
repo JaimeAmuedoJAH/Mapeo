@@ -1,4 +1,4 @@
-package com.jah.mapeo.modelo
+package com.jah.mapeo.modelo.API
 
 import com.jah.mapeo.contralador.AuthApi
 import retrofit2.Retrofit

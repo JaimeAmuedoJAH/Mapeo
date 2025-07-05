@@ -24,12 +24,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jah.mapeo.R
-import com.jah.mapeo.contralador.AppDatabase
-import com.jah.mapeo.modelo.LoginRequest
-import com.jah.mapeo.modelo.LoginResponse
-import com.jah.mapeo.modelo.RetrofitClient
-import com.jah.mapeo.modelo.RetrofitClientPublic
-import kotlinx.coroutines.launch
+import com.jah.mapeo.modelo.API.Auth.LoginRequest
+import com.jah.mapeo.modelo.API.Auth.LoginResponse
+import com.jah.mapeo.modelo.API.RetrofitProvider
+import com.jah.mapeo.modelo.API.RetrofitClientPublic
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -39,7 +37,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         // Inicializa Retrofit con el contexto de aplicación
-        RetrofitClient.init(this)
+        RetrofitProvider.init(this)
 
         // Verifica si hay token guardado (sesión activa)
         val prefs = getSharedPreferences("auth_prefs", MODE_PRIVATE)
@@ -62,8 +60,6 @@ class MainActivity : AppCompatActivity() {
     fun LoginScreen() {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
-        val db = remember { AppDatabase.getDatabase(context) }
-        val usuarioDao = db.usuarioDao()
 
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
@@ -146,36 +142,37 @@ class MainActivity : AppCompatActivity() {
             Button(
                 onClick = {
                     val loginRequest = LoginRequest(email, password)
+                    val prefs = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+
 
                     RetrofitClientPublic.instance.login(loginRequest).enqueue(object : Callback<LoginResponse> {
-                        override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {if (response.isSuccessful) {
-                            val token = response.body()?.token
-                            if (token != null) {
-                                // Guardamos el token
-                                val prefs = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
-                                prefs.edit().putString("jwt_token", token).apply()
+                        override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
+                            if (response.isSuccessful) {
+                                val loginResponse = response.body()
+                                val token = loginResponse?.token
+                                val usuarioId = loginResponse?.usuario?.usuario_id
 
-                                // Redirigir al inicio
-                                context.startActivity(Intent(context, Inicio::class.java))
-                                if (context is AppCompatActivity) {
-                                    context.finish()
+                                if (!token.isNullOrEmpty() && usuarioId != null) {
+                                    prefs.edit()
+                                        .putString("jwt_token", token)
+                                        .putInt("usuario_id", usuarioId)
+                                        .apply()
+
+                                    context.startActivity(Intent(context, Inicio::class.java))
+                                    if (context is AppCompatActivity) context.finish()
+                                } else {
+                                    Toast.makeText(context, "Error: Token o ID de usuario nulo", Toast.LENGTH_SHORT).show()
                                 }
-                            } else {
-                                Toast.makeText(context, "Token vacío. Intenta nuevamente.", Toast.LENGTH_SHORT).show()
-                            }
-                        } else {
-                            Toast.makeText(context, "Credenciales inválidas", Toast.LENGTH_SHORT).show()
-                        }
 
+                            } else {
+                                Toast.makeText(context, "Credenciales inválidas", Toast.LENGTH_SHORT).show()
+                            }
                         }
 
                         override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
                             Toast.makeText(context, "Error de conexión: ${t.message}", Toast.LENGTH_SHORT).show()
                         }
-
                     })
-
-
                 },
                 colors = ButtonDefaults.buttonColors(colorResource(id = R.color.buttons)),
                 modifier = Modifier.fillMaxWidth(0.8f)

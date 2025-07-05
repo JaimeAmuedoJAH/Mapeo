@@ -29,6 +29,10 @@
             android:name=".vista.activity.Registro" />
         <activity
             android:name=".vista.activity.Inicio" />
+        <activity
+            android:name=".vista.activity.VerViaje" />
+        <activity
+            android:name=".vista.activity.VerItinerario" />
     </application>
 
 </manifest>

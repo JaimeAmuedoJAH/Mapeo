@@ -22,10 +22,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.jah.mapeo.R
-import com.jah.mapeo.modelo.RegistroRequest
-import com.jah.mapeo.modelo.RegistroResponse
-import com.jah.mapeo.modelo.RetrofitClient
-import com.jah.mapeo.modelo.RetrofitClientPublic
+import com.jah.mapeo.modelo.API.Auth.RegistroRequest
+import com.jah.mapeo.modelo.API.RetrofitClientPublic
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Callback

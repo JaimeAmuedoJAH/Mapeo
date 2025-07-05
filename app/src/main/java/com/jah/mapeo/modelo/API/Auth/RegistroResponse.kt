@@ -1,4 +1,4 @@
-package com.jah.mapeo.modelo
+package com.jah.mapeo.modelo.API.Auth
 
 data class RegistroResponse(
     val id: Int,

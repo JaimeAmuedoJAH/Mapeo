@@ -1,4 +1,4 @@
-package com.jah.mapeo.modelo
+package com.jah.mapeo.modelo.POJO
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -14,4 +14,3 @@ data class Usuario(
         return "Usuario(id=$id, nombre='$nombre', email='$email', password='$password')"
     }
 }
-

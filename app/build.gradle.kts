@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.plugin.compose)
-    id("kotlin-kapt")
+    id ("kotlin-parcelize")
 }
 
 
@@ -53,7 +53,8 @@ dependencies {
     implementation(libs.converter.gson)
 
     implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.material3)
+    implementation (libs.androidx.material3)
+
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.preference)
     debugImplementation(libs.androidx.ui.tooling)
@@ -62,7 +63,6 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation (libs.androidx.room.runtime)
-    kapt(libs.androidx.room.compiler)
     implementation (libs.androidx.room.ktx)
     implementation (libs.androidx.navigation.compose)
     implementation (libs.androidx.lifecycle.runtime.ktx)
@@ -70,6 +70,7 @@ dependencies {
     implementation (libs.retrofit)
     implementation (libs.converter.gson)
     implementation (libs.logging.interceptor)
-
+    implementation(libs.coil.compose)
+    implementation(libs.androidx.foundation)
 
 }
